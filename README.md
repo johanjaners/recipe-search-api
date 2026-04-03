@@ -242,6 +242,26 @@ Expected response:
 ```text
 400 Bad Request
 At least one ingredient or a query must be provided.
+````
+
+### Azure OpenAi interpretation example
+
+```json
+{
+    "ingredients": [],
+    "query": "Jag vill laga något starkt med fisk och kokosmjölk",
+    "language": "sv",
+    "top": 5
+}
+```
+
+Expected result should look closer to:
+
+```json
+{
+    "normalizedIngredients": ["fish", "coconut milk"],
+    "normalizedKeywords": ["spicy"]
+}
 ```
 
 ---
@@ -257,6 +277,28 @@ This includes:
 - ranking logic, result ordering, filtering, and top result limits
 
 The test suite focuses on validating the most critical backend behavior.
+
+---
+
+## AI Usage
+
+AI is used only for query interpretation.
+
+This includes:
+
+- multilingual input normalization
+- translation to English search terms
+- ingredient extraction from free text
+- keyword extraction from cooking intent
+
+The AI output is converted into a structured query model containing:
+
+- normalized ingredients
+- normalized keywords
+- translated query
+- detected language
+
+Recipe retrieval and ranking remain deterministic.
 
 ---
 
