@@ -125,4 +125,38 @@ public class RecipeRankingServiceTests
 
         Assert.Equal(2, results.Count);
     }
+
+    [Fact]
+    public void Rank_ShouldPreferStrongIngredientMatchOverWeakPartialMatch()
+    {
+        var recipes = new List<Recipe>
+    {
+        new()
+        {
+            Id = "1",
+            Name = "Sweet and spicy fish",
+            IngredientsRaw = "coconut milk\nwhite fish fillet",
+            Ingredients = new List<string> { "coconut milk", "white fish fillet" }
+        },
+        new()
+        {
+            Id = "2",
+            Name = "Spicy lamb and paw paw",
+            IngredientsRaw = "coconut milk\nfish sauce",
+            Ingredients = new List<string> { "coconut milk", "fish sauce" }
+        }
+    };
+
+        var query = new InterpretedQuery
+        {
+            Ingredients = new List<string> { "fish", "coconut milk" },
+            Keywords = new List<string> { "spicy" }
+        };
+
+        var service = new RecipeRankingService();
+
+        var results = service.Rank(recipes, query, 10);
+
+        Assert.Equal("1", results[0].Recipe.Id);
+    }
 }
