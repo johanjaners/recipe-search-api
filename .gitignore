@@ -3,6 +3,10 @@
 ##
 ## Get latest from `dotnet new gitignore`
 
+# Local dataset files
+data/*
+!data/.gitkeep
+
 # dotenv files
 .env
 
