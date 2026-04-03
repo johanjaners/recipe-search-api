@@ -64,14 +64,25 @@ public class AzureOpenAiQueryInterpretationService(
         Convert everything to normalized English tokens.
         """;
 
-    private static InterpretedQuery MapToInterpretedQuery(OpenAiInterpretedQueryResponse model) =>
-        new()
+    private static InterpretedQuery MapToInterpretedQuery(OpenAiInterpretedQueryResponse model)
+    {
+        var ingredients = model.Ingredients
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+        var keywords = model.Keywords
+            .Except(ingredients, StringComparer.OrdinalIgnoreCase)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        return new InterpretedQuery
         {
-            Ingredients = model.Ingredients,
-            Keywords = model.Keywords,
+            Ingredients = ingredients,
+            Keywords = keywords,
             TranslatedQuery = model.TranslatedQuery,
             DetectedLanguage = model.DetectedLanguage
         };
+    }
 
     private static InterpretedQuery BuildFallback(RecipeSearchQuery query)
     {
