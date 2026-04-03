@@ -5,25 +5,44 @@ using RecipeSearch.Domain.Models;
 
 namespace RecipeSearch.Infrastructure.AI;
 
-public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
+public class AzureOpenAiQueryInterpretationService(
+    IChatClient chatClient,
+    ILogger<AzureOpenAiQueryInterpretationService> logger)
+    : IQueryInterpretationService
 {
-    private readonly IChatClient _chatClient;
-    private readonly ILogger<AzureOpenAiQueryInterpretationService> _logger;
-
-    public AzureOpenAiQueryInterpretationService(IChatClient chatClient,
-        ILogger<AzureOpenAiQueryInterpretationService> logger)
-    {
-        _chatClient = chatClient;
-        _logger = logger;
-    }
-
     public async Task<InterpretedQuery> InterpretAsync(
         RecipeSearchQuery query,
         CancellationToken cancellationToken = default)
     {
-        var systemPrompt = """
+        try
+        {
+            var json = await chatClient.GetCompletionAsync(
+                BuildSystemPrompt(),
+                BuildUserPrompt(query),
+                cancellationToken);
+
+            var model = JsonSerializer.Deserialize<OpenAiInterpretedQueryResponse>(
+                json,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+            return model is null
+                ? BuildFallback(query)
+                : MapToInterpretedQuery(model);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Azure OpenAI interpretation failed.");
+            return BuildFallback(query);
+        }
+    }
+
+    private static string BuildSystemPrompt() =>
+        """
         You are a recipe query interpreter.
-        Return ONLY valid JSON.
+        Return only valid JSON.
         No markdown.
         No explanations.
 
@@ -36,7 +55,8 @@ public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
         }
         """;
 
-        var userPrompt = $"""
+    private static string BuildUserPrompt(RecipeSearchQuery query) =>
+        $"""
         Ingredients: {string.Join(", ", query.Ingredients)}
         Query: {query.OriginalQuery}
         Language: {query.Language}
@@ -44,46 +64,21 @@ public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
         Convert everything to normalized English tokens.
         """;
 
-        try
+    private static InterpretedQuery MapToInterpretedQuery(OpenAiInterpretedQueryResponse model) =>
+        new()
         {
-            var json = await _chatClient.GetCompletionAsync(
-                systemPrompt,
-                userPrompt,
-                cancellationToken);
-
-            var model = JsonSerializer.Deserialize<OpenAiInterpretedQueryResponse>(
-                json,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
-
-            if (model == null)
-            {
-                return BuildFallback(query);
-            }
-
-            return new InterpretedQuery
-            {
-                Ingredients = model.Ingredients,
-                Keywords = model.Keywords,
-                TranslatedQuery = model.TranslatedQuery,
-                DetectedLanguage = model.DetectedLanguage
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Azure OpenAI interpretation failed. Using fallback.");
-            return BuildFallback(query);
-        }
-    }
+            Ingredients = model.Ingredients,
+            Keywords = model.Keywords,
+            TranslatedQuery = model.TranslatedQuery,
+            DetectedLanguage = model.DetectedLanguage
+        };
 
     private static InterpretedQuery BuildFallback(RecipeSearchQuery query)
     {
-
         var keywords = query.OriginalQuery
             .ToLowerInvariant()
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Split(new[] { ' ', ',', '.', '!', '?', ';', ':', '\n', '\r', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+            .Where(x => x.Length > 2)
             .Distinct()
             .ToList();
 
