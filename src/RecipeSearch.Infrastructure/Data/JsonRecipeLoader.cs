@@ -7,12 +7,30 @@ public class JsonRecipeLoader
 {
     public async Task<IReadOnlyList<Recipe>> LoadAsync(string filePath)
     {
-        await using var stream = File.OpenRead(filePath);
+        var recipes = new List<Recipe>();
 
-        var rawItems = await JsonSerializer.DeserializeAsync<List<RawRecipeItem>>(stream)
-                       ?? new List<RawRecipeItem>();
+        using var reader = new StreamReader(filePath);
 
-        return rawItems.Select(MapToRecipe).ToList();
+        while (!reader.EndOfStream)
+        {
+            var line = await reader.ReadLineAsync();
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            var rawItem = JsonSerializer.Deserialize<RawRecipeItem>(line);
+
+            if (rawItem is null)
+            {
+                continue;
+            }
+
+            recipes.Add(MapToRecipe(rawItem));
+        }
+
+        return recipes;
     }
 
     private static Recipe MapToRecipe(RawRecipeItem raw)
