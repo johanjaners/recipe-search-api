@@ -1,32 +1,30 @@
 # Recipe Search API
 
-Simple ASP.NET Core Web API for searching recipes using ingredients and free text queries.
+ASP.NET Core Web API for recipe search using ingredients and natural language queries.
 
-Current release: `v0.1.0`  
-Status: `MVP / Pre release`
+The API supports deterministic recipe ranking and Azure OpenAI based multilingual query interpretation.
 
 ---
 
-## Project overview
+## Project Overview
 
-This project provides a simple backend API for searching recipes from a JSON dataset.
+This project provides a backend API for searching recipes from a JSON dataset.
 
-The API supports:
+Supported search modes:
 
 - ingredient based search
 - free text search
 - mixed search
-- request validation
+- multilingual query interpretation
 - deterministic ranking
+- request validation
 - Swagger UI testing
 
-The goal of this MVP is to demonstrate clear backend architecture, service boundaries, validation, and explainable search logic.
+The system separates AI based query understanding from deterministic retrieval and ranking.
 
 ---
 
 ## Architecture
-
-Project structure:
 
 ```text
 src/
@@ -39,43 +37,58 @@ tests/
  └── RecipeSearch.Tests
 ```
 
-### Layers
-
 ### API
-Handles:
+
+Responsible for:
 
 - controllers
-- request / response DTOs
+- request and response DTOs
 - validation
-- Swagger
+- Swagger configuration
+- dependency injection
 
 ### Application
-Handles:
+
+Responsible for:
 
 - search orchestration
 - ranking logic
-- query interpretation
-- service interfaces
+- service contracts
+- query interpretation abstraction
 
 ### Domain
+
 Contains:
 
-- Recipe entity
-- search models
-- business rules
+- Recipe
+- RecipeSearchQuery
+- InterpretedQuery
+- RankedRecipeResult
 
 ### Infrastructure
-Handles:
 
-- JSON recipe loading
-- repository implementation
-- data normalization
+Responsible for:
+
+- JSON dataset loading
+- in memory repository
+- Azure OpenAI query interpretation
+- external service integration
 
 ---
 
-## Search flow
+## Search Flow
 
-Search endpoint:
+```text
+Request
+→ validation
+→ AI query interpretation
+→ recipe retrieval
+→ deterministic ranking
+→ top N results
+→ response
+```
+
+Endpoint:
 
 ```http
 POST /api/Recipe/search
@@ -83,200 +96,35 @@ POST /api/Recipe/search
 
 Request fields:
 
-* `ingredients`: list of ingredients
-* `query`: free text cooking intent
-* `language`: ISO 639-1 language code (for example: `"en"`, `"sv"`, `"es"`)
-* `top`: number of results to return
-
-Flow:
-
-```text
-Request
-→ validation
-→ normalize ingredients and query
-→ repository search
-→ ranking
-→ top N results
-→ response
-```
-
-Search supports:
-
-### 1. Ingredient search
-
-Example:
-
-```json
-{
-  "ingredients": ["chicken", "rice"],
-  "query": "",
-  "language": "en",
-  "top": 5
-}
-```
-
-### 2. Free text search
-
-Example:
-
-```json
-{
-  "ingredients": [],
-  "query": "spicy chicken dinner",
-  "language": "en",
-  "top": 5
-}
-```
-
-### 3. Mixed search
-
-Example:
-
-```json
-{
-  "ingredients": ["chicken"],
-  "query": "spicy dinner",
-  "language": "en",
-  "top": 5
-}
-```
+- `ingredients`
+- `query`
+- `language`
+- `top`
 
 ---
 
-## Ranking logic
+## Ranking and Scoring
 
-The current MVP uses deterministic ranking.
+Recipe search uses deterministic scoring.
 
-Results are ranked based on:
+Each searched ingredient is scored by match strength:
 
-- ingredient exact matches
-- recipe name keyword matches
-- ingredient text keyword matches
-- basic text normalization
+- `+6` exact ingredient phrase match
+- `+4` strong phrase or full token match within one ingredient line
+- `+1` weak partial token match
 
-This keeps search behavior predictable and easy to explain.
+Keywords are scored as:
 
-Example scoring logic:
+- `+3` keyword match in recipe name
+- `+2` keyword match in ingredients text
 
-```text
-ingredient matches = high weight
-name matches = medium weight
-query keyword matches = medium weight
-```
+An additional `+2` bonus is added if a searched ingredient is present in the recipe name.
 
-Top results are returned using the `top` parameter.
+The final score is the sum of all matched rules.
 
-Validation:
+Results with score `0` are excluded.
 
-```text
-top must be between 1 and 50
-```
-
----
-
-## How to run
-
-### Dataset
-
-Place the provided dataset file in the `data/` folder before starting the API.
-
-Expected path:
-
-```text
-data/20170107-061401-recipeitems.json
-```
-
-### Run locally
-
-```bash
-dotnet restore
-dotnet build
-dotnet run --project src/RecipeSearch.Api
-```
-
-Swagger UI:
-
-```text
-http://localhost:5064/swagger
-```
-
----
-
-## Swagger test examples
-
-### Ingredient search
-
-```json
-{
-  "ingredients": ["chicken", "rice"],
-  "query": "",
-  "language": "en",
-  "top": 5
-}
-```
-
-### Free text search
-
-```json
-{
-  "ingredients": [],
-  "query": "spicy chicken dinner",
-  "language": "en",
-  "top": 5
-}
-```
-
-### Validation failure example
-
-```json
-{
-  "ingredients": [],
-  "query": "",
-  "language": "en",
-  "top": 5
-}
-```
-
-Expected response:
-
-```text
-400 Bad Request
-At least one ingredient or a query must be provided.
-````
-
-### Azure OpenAi interpretation example
-
-```json
-{
-    "ingredients": [],
-    "query": "Jag vill laga något starkt med fisk och kokosmjölk",
-    "language": "sv",
-    "top": 5
-}
-```
-
-Expected result should look closer to:
-
-```json
-{
-    "normalizedIngredients": ["fish", "coconut milk"],
-    "normalizedKeywords": ["spicy"]
-}
-```
-
----
-
-## Unit Tests
-
-Unit tests cover the core application flow and deterministic search behavior.
-
-This includes:
-
-- JSON recipe loading and parsing from the source dataset
-- search service orchestration between query interpretation, repository, and ranking
-- ranking logic, result ordering, filtering, and top result limits
-
-The test suite focuses on validating the most critical backend behavior.
+Results are returned in descending score order.
 
 ---
 
@@ -302,45 +150,93 @@ Recipe retrieval and ranking remain deterministic.
 
 ---
 
-## Current limitations
+## Unit Tests
 
-Current MVP limitations:
+Unit tests cover the core backend behavior.
 
-- in memory dataset only
-- no database
-- no semantic search
+Covered components:
+
+- `JsonRecipeLoader`
+- `RecipeSearchService`
+- `RecipeRankingService`
+
+Tests verify:
+
+- dataset parsing
+- field mapping
+- search orchestration
+- dependency interaction
+- ranking order
+- zero score filtering
+- top limit handling
+- stronger match prioritization
+
+---
+
+## How to Run
+
+Place the dataset file in:
+
+```text
+data/20170107-061401-recipeitems.json
+```
+
+Run locally:
+
+```bash
+dotnet restore
+dotnet build
+dotnet run --project src/RecipeSearch.Api
+```
+
+Swagger:
+
+```text
+http://localhost:5064/swagger
+```
+
+---
+
+## Azure OpenAI Configuration
+
+Configure secrets locally:
+
+```bash
+dotnet user-secrets set "AzureOpenAI:Endpoint" "<endpoint>"
+dotnet user-secrets set "AzureOpenAI:ApiKey" "<api-key>"
+dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
+```
+
+---
+
+## Example Request
+
+```json
+{
+    "ingredients": [],
+    "query": "Jag vill laga något starkt med fisk och kokosmjölk",
+    "language": "sv",
+    "top": 5
+}
+```
+
+Expected normalized interpretation:
+
+```json
+{
+    "normalizedIngredients": ["fish", "coconut milk"],
+    "normalizedKeywords": ["spicy"]
+}
+```
+
+---
+
+## Current Limitations
+
+- in memory dataset
+- no persistent storage
+- no semantic vector search
 - no synonym dictionary
-- Swedish support is currently basic token matching
-- no AI query interpretation yet
-- ranking is rule based only
+- rule based ranking only
 
-This is intentional for MVP simplicity and explainability.
-
----
-
-## Future improvements
-
-Planned improvements:
-
-- AI based query interpretation
-- multilingual normalization
-- synonym support
-- semantic / vector search
-- database persistence
-- caching
-- improved ranking weights
-- more test coverage
-- deployment pipeline
-
----
-
-## Purpose
-
-This project is built as a backend engineering demo to showcase:
-
-- ASP.NET Core Web API
-- clean service architecture
-- validation and error handling
-- deterministic backend logic
-- clear API contracts
-- production minded engineering decisions
+These tradeoffs are intentional to keep the system explainable and production minded for the scope of the assignment.
