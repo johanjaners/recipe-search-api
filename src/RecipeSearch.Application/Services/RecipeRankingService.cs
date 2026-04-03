@@ -30,12 +30,11 @@ public class RecipeRankingService : IRecipeRankingService
 
         foreach (var ingredient in query.Ingredients)
         {
-            var hasIngredientMatch = recipe.Ingredients.Any(x =>
-                x.Contains(ingredient, StringComparison.OrdinalIgnoreCase));
+            score += GetIngredientMatchScore(recipe, ingredient);
 
-            if (hasIngredientMatch)
+            if (recipe.Name.Contains(ingredient, StringComparison.OrdinalIgnoreCase))
             {
-                score += 5;
+                score += 2;
             }
         }
 
@@ -52,5 +51,50 @@ public class RecipeRankingService : IRecipeRankingService
         }
 
         return score;
+    }
+
+    private static int GetIngredientMatchScore(Recipe recipe, string ingredient)
+    {
+        var target = ingredient.Trim().ToLowerInvariant();
+        var targetTokens = target
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+
+        var bestScore = 0;
+
+        foreach (var item in recipe.Ingredients)
+        {
+            var normalized = item.ToLowerInvariant();
+
+            if (normalized.Equals(target, StringComparison.OrdinalIgnoreCase))
+            {
+                bestScore = Math.Max(bestScore, 6);
+                continue;
+            }
+
+            if (normalized.Contains(target, StringComparison.OrdinalIgnoreCase))
+            {
+                bestScore = Math.Max(bestScore, 4);
+                continue;
+            }
+
+            var allTokensPresent = targetTokens.All(token =>
+                normalized.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+            if (allTokensPresent)
+            {
+                bestScore = Math.Max(bestScore, 4);
+                continue;
+            }
+
+            var anyTokenPresent = targetTokens.Any(token =>
+                normalized.Contains(token, StringComparison.OrdinalIgnoreCase));
+
+            if (anyTokenPresent)
+            {
+                bestScore = Math.Max(bestScore, 1);
+            }
+        }
+
+        return bestScore;
     }
 }
