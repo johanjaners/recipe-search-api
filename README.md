@@ -239,6 +239,20 @@ At least one ingredient or a query must be provided.
 
 ---
 
+## Unit Tests
+
+Unit tests cover the core application flow and deterministic search behavior.
+
+This includes:
+
+- JSON recipe loading and parsing from the source dataset
+- search service orchestration between query interpretation, repository, and ranking
+- ranking logic, result ordering, filtering, and top result limits
+
+The test suite focuses on validating the most critical backend behavior.
+
+---
+
 ## Current limitations
 
 Current MVP limitations:
