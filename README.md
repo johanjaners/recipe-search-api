@@ -81,6 +81,13 @@ Search endpoint:
 POST /api/Recipe/search
 ```
 
+Request fields:
+
+* `ingredients`: list of ingredients
+* `query`: free text cooking intent
+* `language`: ISO 639-1 language code (for example: `"en"`, `"sv"`, `"es"`)
+* `top`: number of results to return
+
 Flow:
 
 ```text
