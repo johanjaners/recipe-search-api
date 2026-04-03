@@ -222,6 +222,8 @@ dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
 }
 ```
 
+Expected normalized input:
+
 ```json
 {
     "normalizedIngredients": ["chicken", "rice"]
@@ -239,7 +241,7 @@ dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
 }
 ```
 
-Expected normalized interpretation:
+Expected normalized input:
 
 ```json
 {
