@@ -209,7 +209,26 @@ dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
 
 ---
 
-## Example Request
+## Example Requests
+
+### Ingredient normalization
+
+```json
+{
+    "ingredients": ["kyckling", "ris"],
+    "query": "",
+    "language": "sv",
+    "top": 5
+}
+```
+
+```json
+{
+    "normalizedIngredients": ["chicken", "rice"]
+}
+```
+
+### Multilingual free text interpretation
 
 ```json
 {
