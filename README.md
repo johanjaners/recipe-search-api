@@ -169,6 +169,16 @@ top must be between 1 and 50
 
 ## How to run
 
+### Dataset
+
+Place the provided dataset file in the `data/` folder before starting the API.
+
+Expected path:
+
+```text
+data/20170107-061401-recipeitems.json
+```
+
 ### Run locally
 
 ```bash
