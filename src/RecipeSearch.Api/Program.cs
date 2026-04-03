@@ -5,7 +5,8 @@ using RecipeSearch.Infrastructure.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var loader = new JsonRecipeLoader();
 var dataPath = Path.Combine(builder.Environment.ContentRootPath, "..", "..", "data", "20170107-061401-recipeitems.json");
@@ -23,7 +24,8 @@ var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 }
 
 app.UseHttpsRedirection();
