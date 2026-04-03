@@ -1,76 +1,103 @@
+using Moq;
+using RecipeSearch.Application.Interfaces;
 using RecipeSearch.Application.Services;
 using RecipeSearch.Domain.Models;
 
 namespace RecipeSearch.Tests.Services;
 
-public class RecipeRankingServiceTests
+public class RecipeSearchServiceTests
 {
     [Fact]
-    public void Rank_ShouldReturnBestMatchFirst()
+    public async Task SearchAsync_ShouldInterpretQuery_GetRecipes_AndReturnRankedResults()
     {
+        var inputQuery = new RecipeSearchQuery
+        {
+            Ingredients = new List<string> { "fish" },
+            OriginalQuery = "spicy fish",
+            Language = "en",
+            Top = 10
+        };
+
+        var interpretedQuery = new InterpretedQuery
+        {
+            Ingredients = new List<string> { "fish" },
+            Keywords = new List<string> { "spicy" },
+            TranslatedQuery = "spicy fish",
+            DetectedLanguage = "en"
+        };
+
         var recipes = new List<Recipe>
         {
             new()
             {
                 Id = "1",
                 Name = "Fish Curry",
-                IngredientsRaw = "fish\ncoconut milk\nchili",
-                Ingredients = new List<string> { "fish", "coconut milk", "chili" },
-                Url = "http://test1.com",
-                PrepTime = "PT10M",
-                CookTime = "PT20M",
-                Source = "test"
-            },
-            new()
-            {
-                Id = "2",
-                Name = "Fish Salad",
-                IngredientsRaw = "fish\nlettuce",
-                Ingredients = new List<string> { "fish", "lettuce" },
-                Url = "http://test2.com",
-                PrepTime = "PT5M",
-                CookTime = "PT0M",
-                Source = "test"
+                IngredientsRaw = "fish\nchili",
+                Ingredients = new List<string> { "fish", "chili" }
             }
         };
 
-        var query = new InterpretedQuery
+        var rankedResults = new List<RankedRecipeResult>
         {
-            Ingredients = new List<string> { "fish", "coconut milk" },
-            Keywords = new List<string> { "curry" },
-            TranslatedQuery = "fish curry with coconut milk",
-            DetectedLanguage = "en"
+            new()
+            {
+                Recipe = recipes[0],
+                Score = 7
+            }
         };
 
-        var service = new RecipeRankingService();
+        var interpretationServiceMock = new Mock<IQueryInterpretationService>();
+        interpretationServiceMock
+            .Setup(x => x.InterpretAsync(inputQuery, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(interpretedQuery);
 
-        var results = service.Rank(recipes, query, 10);
+        var repositoryMock = new Mock<IRecipeRepository>();
+        repositoryMock
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipes);
 
-        Assert.Equal(2, results.Count);
+        var rankingServiceMock = new Mock<IRecipeRankingService>();
+        rankingServiceMock
+            .Setup(x => x.Rank(recipes, interpretedQuery, inputQuery.Top))
+            .Returns(rankedResults);
+
+        var service = new RecipeSearchService(
+            repositoryMock.Object,
+            interpretationServiceMock.Object,
+            rankingServiceMock.Object);
+
+        var (query, results) = await service.SearchAsync(inputQuery);
+
+        Assert.Equal(interpretedQuery, query);
+        Assert.Single(results);
         Assert.Equal("1", results[0].Recipe.Id);
-        Assert.Equal("Fish Curry", results[0].Recipe.Name);
-        Assert.True(results[0].Score > results[1].Score);
+        Assert.Equal(7, results[0].Score);
+
+        interpretationServiceMock.Verify(
+            x => x.InterpretAsync(inputQuery, It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        repositoryMock.Verify(
+            x => x.GetAllAsync(It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        rankingServiceMock.Verify(
+            x => x.Rank(recipes, interpretedQuery, inputQuery.Top),
+            Times.Once);
     }
 
     [Fact]
-    public void Rank_ShouldFilterOutRecipesWithZeroScore()
+    public async Task SearchAsync_ShouldPassTopValueToRankingService()
     {
-        var recipes = new List<Recipe>
+        var inputQuery = new RecipeSearchQuery
         {
-            new()
-            {
-                Id = "1",
-                Name = "Beef Stew",
-                IngredientsRaw = "beef\npotato",
-                Ingredients = new List<string> { "beef", "potato" },
-                Url = "http://test1.com",
-                PrepTime = "PT10M",
-                CookTime = "PT20M",
-                Source = "test"
-            }
+            Ingredients = new List<string> { "fish" },
+            OriginalQuery = "fish curry",
+            Language = "en",
+            Top = 3
         };
 
-        var query = new InterpretedQuery
+        var interpretedQuery = new InterpretedQuery
         {
             Ingredients = new List<string> { "fish" },
             Keywords = new List<string> { "curry" },
@@ -78,51 +105,37 @@ public class RecipeRankingServiceTests
             DetectedLanguage = "en"
         };
 
-        var service = new RecipeRankingService();
-
-        var results = service.Rank(recipes, query, 10);
-
-        Assert.Empty(results);
-    }
-
-    [Fact]
-    public void Rank_ShouldRespectTopLimit()
-    {
         var recipes = new List<Recipe>
         {
-            new()
-            {
-                Id = "1",
-                Name = "Fish Curry",
-                IngredientsRaw = "fish\ncoconut milk",
-                Ingredients = new List<string> { "fish", "coconut milk" }
-            },
-            new()
-            {
-                Id = "2",
-                Name = "Fish Soup",
-                IngredientsRaw = "fish\nwater",
-                Ingredients = new List<string> { "fish", "water" }
-            },
-            new()
-            {
-                Id = "3",
-                Name = "Fish Rice",
-                IngredientsRaw = "fish\nrice",
-                Ingredients = new List<string> { "fish", "rice" }
-            }
+            new() { Id = "1", Name = "Fish Curry", Ingredients = new List<string> { "fish" } }
         };
 
-        var query = new InterpretedQuery
-        {
-            Ingredients = new List<string> { "fish" },
-            Keywords = new List<string>()
-        };
+        var rankedResults = new List<RankedRecipeResult>();
 
-        var service = new RecipeRankingService();
+        var interpretationServiceMock = new Mock<IQueryInterpretationService>();
+        interpretationServiceMock
+            .Setup(x => x.InterpretAsync(inputQuery, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(interpretedQuery);
 
-        var results = service.Rank(recipes, query, 2);
+        var repositoryMock = new Mock<IRecipeRepository>();
+        repositoryMock
+            .Setup(x => x.GetAllAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(recipes);
 
-        Assert.Equal(2, results.Count);
+        var rankingServiceMock = new Mock<IRecipeRankingService>();
+        rankingServiceMock
+            .Setup(x => x.Rank(recipes, interpretedQuery, 3))
+            .Returns(rankedResults);
+
+        var service = new RecipeSearchService(
+            repositoryMock.Object,
+            interpretationServiceMock.Object,
+            rankingServiceMock.Object);
+
+        await service.SearchAsync(inputQuery);
+
+        rankingServiceMock.Verify(
+            x => x.Rank(recipes, interpretedQuery, 3),
+            Times.Once);
     }
 }
