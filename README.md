@@ -260,4 +260,4 @@ Expected normalized input:
 - no synonym dictionary
 - rule based ranking only
 
-These tradeoffs are intentional to keep the system explainable and production minded for the scope of the assignment.
+These tradeoffs are intentional to keep the system predictable, traceable, and production minded for the scope of the assignment.
