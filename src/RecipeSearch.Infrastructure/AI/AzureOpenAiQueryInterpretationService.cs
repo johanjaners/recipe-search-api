@@ -21,8 +21,6 @@ public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
         RecipeSearchQuery query,
         CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation("AzureOpenAiQueryInterpretationService called.");
-
         var systemPrompt = """
         You are a recipe query interpreter.
         Return ONLY valid JSON.
@@ -48,14 +46,10 @@ public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
 
         try
         {
-            _logger.LogInformation("Calling Azure OpenAI...");
-
             var json = await _chatClient.GetCompletionAsync(
                 systemPrompt,
                 userPrompt,
                 cancellationToken);
-
-            _logger.LogInformation("Azure OpenAI raw response: {Json}", json);
 
             var model = JsonSerializer.Deserialize<OpenAiInterpretedQueryResponse>(
                 json,
@@ -66,11 +60,8 @@ public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
 
             if (model == null)
             {
-                _logger.LogWarning("Azure OpenAI returned null model. Using fallback.");
                 return BuildFallback(query);
             }
-
-            _logger.LogInformation("Azure OpenAI interpretation succeeded.");
 
             return new InterpretedQuery
             {
@@ -89,26 +80,19 @@ public class AzureOpenAiQueryInterpretationService : IQueryInterpretationService
 
     private static InterpretedQuery BuildFallback(RecipeSearchQuery query)
     {
+
+        var keywords = query.OriginalQuery
+            .ToLowerInvariant()
+            .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            .Distinct()
+            .ToList();
+
         return new InterpretedQuery
         {
             Ingredients = query.Ingredients,
-            Keywords = new List<string> { "FALLBACK_USED" },
+            Keywords = keywords,
             TranslatedQuery = query.OriginalQuery,
             DetectedLanguage = query.Language
         };
-
-        // var keywords = query.OriginalQuery
-        //     .ToLowerInvariant()
-        //     .Split(' ', StringSplitOptions.RemoveEmptyEntries)
-        //     .Distinct()
-        //     .ToList();
-
-        // return new InterpretedQuery
-        // {
-        //     Ingredients = query.Ingredients,
-        //     Keywords = keywords,
-        //     TranslatedQuery = query.OriginalQuery,
-        //     DetectedLanguage = query.Language
-        // };
     }
 }
