@@ -1,3 +1,5 @@
+namespace RecipeSearch.Domain.Models;
+
 public class Recipe
 {
     public string Id { get; init; } = string.Empty;

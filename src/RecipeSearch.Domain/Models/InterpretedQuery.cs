@@ -1,3 +1,5 @@
+namespace RecipeSearch.Domain.Models;
+
 public class InterpretedQuery
 {
     public IReadOnlyList<string> Ingredients { get; init; } = Array.Empty<string>();
