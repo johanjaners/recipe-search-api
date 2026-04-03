@@ -1,8 +1,25 @@
 using RecipeSearch.Application.Interfaces;
 using RecipeSearch.Application.Services;
 using RecipeSearch.Infrastructure.Data;
+using RecipeSearch.Infrastructure.AI;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Configuration.AddUserSecrets<Program>();
+
+builder.Services.AddSingleton<IChatClient>(sp =>
+{
+    var endpoint = builder.Configuration["AzureOpenAI:Endpoint"]
+        ?? throw new InvalidOperationException("Missing endpoint");
+
+    var apiKey = builder.Configuration["AzureOpenAI:ApiKey"]
+        ?? throw new InvalidOperationException("Missing api key");
+
+    var deployment = builder.Configuration["AzureOpenAI:DeploymentName"]
+        ?? throw new InvalidOperationException("Missing deployment");
+
+    return new AzureChatClient(endpoint, apiKey, deployment);
+});
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -16,7 +33,7 @@ var recipes = await loader.LoadAsync(fullDataPath);
 builder.Services.AddSingleton<IRecipeRepository>(
     new InMemoryRecipeRepository(recipes));
 
-builder.Services.AddScoped<IQueryInterpretationService, SimpleQueryInterpretationService>();
+builder.Services.AddScoped<IQueryInterpretationService, AzureOpenAiQueryInterpretationService>();
 builder.Services.AddScoped<IRecipeRankingService, RecipeRankingService>();
 builder.Services.AddScoped<IRecipeSearchService, RecipeSearchService>();
 
