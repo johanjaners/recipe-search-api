@@ -5,15 +5,32 @@ namespace RecipeSearch.Infrastructure.Data;
 
 public class JsonRecipeLoader
 {
-    public async Task<IReadOnlyList<Recipe>> LoadAsync(string filePath)
+    public async Task<IReadOnlyList<Recipe>> LoadAsync(
+        string filePath,
+        CancellationToken cancellationToken = default)
+    {
+        await using var stream = File.OpenRead(filePath);
+        return await LoadAsync(stream, cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<Recipe>> LoadAsync(
+        Stream stream,
+        CancellationToken cancellationToken = default)
     {
         var recipes = new List<Recipe>();
 
-        using var reader = new StreamReader(filePath);
+        using var reader = new StreamReader(stream);
 
-        while (!reader.EndOfStream)
+        while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             var line = await reader.ReadLineAsync();
+
+            if (line is null)
+            {
+                break;
+            }
 
             if (string.IsNullOrWhiteSpace(line))
             {
