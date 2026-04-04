@@ -8,7 +8,7 @@ The API supports deterministic recipe ranking and Azure OpenAI based multilingua
 
 ## Project Overview
 
-This project provides a backend API for searching recipes from a JSON dataset.
+This project provides a backend API for searching recipes from a recipe dataset.
 
 Supported search modes:
 
@@ -69,7 +69,7 @@ Contains:
 
 Responsible for:
 
-- JSON dataset loading
+- dataset loading
 - in memory repository
 - Azure OpenAI query interpretation
 - external service integration
@@ -150,6 +150,21 @@ Recipe retrieval and ranking remain deterministic.
 
 ---
 
+## Data Loading
+
+Recipe data is loaded once during application startup and stored in memory for fast read access during search.
+
+Supported data sources:
+
+- local dataset file for local development
+- Azure Blob Storage for deployed environments
+
+The active source is selected through configuration.
+
+After startup, all searches use the in memory repository to keep retrieval deterministic and low latency.
+
+---
+
 ## Unit Tests
 
 Unit tests cover the core backend behavior.
@@ -175,19 +190,25 @@ Tests verify:
 
 ## How to Run
 
+### Local dataset mode
+
 Place the dataset file in:
 
 ```text
 data/20170107-061401-recipeitems.json
 ```
 
-Run locally:
+Then run:
 
 ```bash
 dotnet restore
 dotnet build
 dotnet run --project src/RecipeSearch.Api
 ```
+
+### Blob Storage mode
+
+Configure Blob Storage and run the API without a local dataset file.
 
 Swagger:
 
@@ -197,14 +218,17 @@ http://localhost:5064/swagger
 
 ---
 
-## Azure OpenAI Configuration
+## Configuration
 
-Configure secrets locally:
+Required configuration depends on the selected data source and whether AI query interpretation is enabled.
+
+Example user secrets:
 
 ```bash
 dotnet user-secrets set "AzureOpenAI:Endpoint" "<endpoint>"
 dotnet user-secrets set "AzureOpenAI:ApiKey" "<api-key>"
 dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
+dotnet user-secrets set "BlobStorage:ConnectionString" "<connection-string>"
 ```
 
 ---
