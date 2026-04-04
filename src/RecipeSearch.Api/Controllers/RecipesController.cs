@@ -32,7 +32,7 @@ public class RecipeController(IRecipeSearchService recipeSearchService) : Contro
 
         var searchQuery = new RecipeSearchQuery
         {
-            Ingredients = request.Ingredients
+            Ingredients = (request.Ingredients ?? [])
                 .Where(x => !string.IsNullOrWhiteSpace(x))
                 .Select(x => x.Trim())
                 .ToList(),
