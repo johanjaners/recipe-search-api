@@ -46,12 +46,25 @@ public class AzureOpenAiQueryInterpretationService(
         No markdown.
         No explanations.
 
+        Extract only terms that improve recipe retrieval.
+
+        Rules:
+        1. Translate everything to normalized English.
+        2. Put concrete food items in "ingredients".
+        3. Put only recipe distinguishing terms in "keywords".
+        4. Valid keywords are things like dish type, flavor, style, method, dietary preference, or meal context.
+        5. Do not include generic cooking verbs or filler words.
+        6. Exclude words such as "cook", "prepare", "make", "want", "need", "something", "food", "dish", "recipe", "with", "using", "for".
+        7. If the query only expresses a general wish to cook something, return no keywords.
+        8. If a term is already in "ingredients", do not repeat it in "keywords".
+        9. Keep tokens short and useful for recipe search only.
+
         JSON schema:
         {
-          "ingredients": ["string"],
-          "keywords": ["string"],
-          "translatedQuery": "string",
-          "detectedLanguage": "string"
+        "ingredients": ["string"],
+        "keywords": ["string"],
+        "translatedQuery": "string",
+        "detectedLanguage": "string"
         }
         """;
 
@@ -61,7 +74,16 @@ public class AzureOpenAiQueryInterpretationService(
         Query: {query.OriginalQuery}
         Language: {query.Language}
 
-        Convert everything to normalized English tokens.
+        Convert this into normalized English recipe search terms.
+
+        Include in "ingredients":
+        concrete food items only.
+
+        Include in "keywords":
+        only dish type, flavor, cuisine, cooking style, dietary preference, or meal type.
+
+        Do not include generic verbs or filler words.
+        If none exist, return an empty keywords array.
         """;
 
     private static InterpretedQuery MapToInterpretedQuery(OpenAiInterpretedQueryResponse model)
