@@ -10,6 +10,11 @@ public class AzureOpenAiQueryInterpretationService(
     ILogger<AzureOpenAiQueryInterpretationService> logger)
     : IQueryInterpretationService
 {
+    private static readonly JsonSerializerOptions _jsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public async Task<InterpretedQuery> InterpretAsync(
         RecipeSearchQuery query,
         CancellationToken cancellationToken = default)
@@ -23,10 +28,7 @@ public class AzureOpenAiQueryInterpretationService(
 
             var model = JsonSerializer.Deserialize<OpenAiInterpretedQueryResponse>(
                 json,
-                new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                });
+                _jsonOptions);
 
             return model is null
                 ? BuildFallback(query)
