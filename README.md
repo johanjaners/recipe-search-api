@@ -137,7 +137,9 @@ This includes:
 - multilingual input normalization
 - translation to English search terms
 - ingredient extraction from free text
-- keyword extraction from cooking intent
+- keyword extraction from recipe intent
+
+The prompt is designed to extract only retrieval relevant ingredients and recipe intent terms while excluding generic filler words and helper verbs.
 
 The AI output is converted into a structured query model containing:
 
