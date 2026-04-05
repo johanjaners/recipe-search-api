@@ -6,6 +6,25 @@ The API supports deterministic recipe ranking and Azure OpenAI based multilingua
 
 ---
 
+## Live Demo
+
+Swagger UI:
+https://recipe-search-api-a8cwexa9fag3fyg2.westeurope-01.azurewebsites.net/swagger
+
+---
+
+## Deployment
+
+Deployed on Azure App Service.
+
+Cloud resources used:
+
+- Azure App Service
+- Azure Blob Storage
+- Azure OpenAI
+
+---
+
 ## Project Overview
 
 This project provides a backend API for searching recipes from a recipe dataset.
@@ -25,6 +44,53 @@ The system separates AI based query understanding from deterministic retrieval a
 ---
 
 ## Architecture
+
+### System Diagram and Runtime Flow
+
+```mermaid
+flowchart LR
+
+%% Client
+A["Client App | UI, Postman, Swagger"] --> B["API Layer | Controllers, DTOs, Validation, Rate Limiting"]
+
+%% API to Application
+B --> C["Application Layer | Search Orchestration, Ranking, Query Interpretation Abstraction"]
+
+%% Query Interpretation
+C -->|Query Interpretation| D["Infrastructure | Azure OpenAI Service | Translation, Ingredient Extraction, Keyword Extraction"]
+
+%% Domain
+C --> E["Domain Layer | Recipe, RecipeSearchQuery, InterpretedQuery, RankedRecipeResult"]
+
+%% Infrastructure
+E --> F["Infrastructure | InMemory Repository, Json Loader, Blob Loader"]
+
+%% Dataset
+F --> G["Recipe Dataset | Local File or Azure Blob Storage"]
+
+%% Startup Flow
+subgraph Startup["Startup Data Load"]
+direction LR
+S1["App Service Starts"] --> S2["Load Dataset (Blob or Local)"]
+S2 --> S3["Populate InMemory Repository"]
+end
+
+S3 --> F
+
+%% Search Flow
+subgraph Search_Flow["Search Flow"]
+direction LR
+R1["Request"] --> R2["Validation"]
+R2 --> R3["AI Query Interpretation"]
+R3 --> R4["Recipe Retrieval"]
+R4 --> R5["Deterministic Ranking"]
+R5 --> R6["Top N Results"]
+R6 --> R7["Response"]
+end
+
+B --> R1
+R7 --> A
+```
 
 ```text
 src/
@@ -73,33 +139,6 @@ Responsible for:
 - in memory repository
 - Azure OpenAI query interpretation
 - external service integration
-
----
-
-## Search Flow
-
-```text
-Request
-→ validation
-→ AI query interpretation
-→ recipe retrieval
-→ deterministic ranking
-→ top N results
-→ response
-```
-
-Endpoint:
-
-```http
-POST /api/Recipe/search
-```
-
-Request fields:
-
-- `ingredients`
-- `query`
-- `language`
-- `top`
 
 ---
 
