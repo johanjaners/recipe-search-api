@@ -324,9 +324,16 @@ Expected normalized input:
 ## Current Limitations
 
 - in memory dataset
-- no persistent storage
-- no semantic vector search
-- no synonym dictionary
-- rule based ranking only
+- full scan per request
+- no persistent database
+- no indexed search
+- rule based ranking
 
-These tradeoffs are intentional to keep the system predictable, traceable, and production minded for the scope of the assignment.
+These tradeoffs are intentional to keep the system predictable, traceable, and production-minded for the scope of the assignment.
+
+## Next steps
+
+- move dataset to SQL / PostgreSQL
+- add indexes on recipe name and ingredients
+- reduce full dataset iteration before ranking
+- optional synonym support
