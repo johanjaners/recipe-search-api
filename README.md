@@ -34,7 +34,11 @@ Supported search modes:
 - ingredient based search
 - free text search
 - mixed search
-- multilingual query interpretation
+- multilingual input
+
+The API includes:
+
+- AI based query interpretation
 - deterministic ranking
 - request validation
 - Swagger UI testing
