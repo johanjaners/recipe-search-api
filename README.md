@@ -326,14 +326,10 @@ Expected normalized input:
 - in memory dataset
 - full scan per request
 - no persistent database
-- no indexed search
-- rule based ranking
-
-These tradeoffs are intentional to keep the system predictable, traceable, and production-minded for the scope of the assignment.
+- no indexed search  
 
 ## Next steps
 
 - move dataset to SQL / PostgreSQL
 - add indexes on recipe name and ingredients
 - reduce full dataset iteration before ranking
-- optional synonym support
