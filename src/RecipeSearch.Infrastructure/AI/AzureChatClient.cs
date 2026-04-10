@@ -32,7 +32,7 @@ public class AzureChatClient : IChatClient
         {
             ResponseFormat = ChatResponseFormat.CreateJsonObjectFormat(),
             Temperature = 0.2f,
-            MaxOutputTokenCount = 500
+            MaxOutputTokenCount = 150
         };
 
         var completion = await _chatClient.CompleteChatAsync(
