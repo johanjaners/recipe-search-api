@@ -34,7 +34,11 @@ Supported search modes:
 - ingredient based search
 - free text search
 - mixed search
-- multilingual query interpretation
+- multilingual input
+
+The API includes:
+
+- AI based query interpretation
 - deterministic ranking
 - request validation
 - Swagger UI testing
@@ -320,9 +324,12 @@ Expected normalized input:
 ## Current Limitations
 
 - in memory dataset
-- no persistent storage
-- no semantic vector search
-- no synonym dictionary
-- rule based ranking only
+- full scan per request
+- no persistent database
+- no indexed search  
 
-These tradeoffs are intentional to keep the system predictable, traceable, and production minded for the scope of the assignment.
+## Next steps
+
+- move dataset to SQL / PostgreSQL
+- add indexes on recipe name and ingredients
+- reduce full dataset iteration before ranking
