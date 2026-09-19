@@ -323,13 +323,17 @@ Expected normalized input:
 
 ## Current Limitations
 
-- in memory dataset
-- full scan per request
-- no persistent database
-- no indexed search  
+* dataset is loaded in memory
+* full dataset scan per request
+* no persistent database
+* no semantic search
+* ranking is fully rule based
 
-## Next steps
+## Next Steps
 
-- move dataset to SQL / PostgreSQL
-- add indexes on recipe name and ingredients
-- reduce full dataset iteration before ranking
+* move dataset to PostgreSQL
+* add embeddings for recipes
+* implement semantic search with pgvector
+* reduce full dataset iteration before ranking
+* combine semantic retrieval with rule based filtering
+
