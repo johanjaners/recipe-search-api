@@ -67,7 +67,7 @@ C -->|Query Interpretation| D["Infrastructure | Azure OpenAI Service | Translati
 C --> E["Domain Layer | Recipe, RecipeSearchQuery, InterpretedQuery, RankedRecipeResult"]
 
 %% Infrastructure
-E --> F["Infrastructure | InMemory Repository, Json Loader, Blob Loader"]
+E --> F["Infrastructure | PostgreSQL Repository, EF Core, Json Loader, Blob Loader"]
 
 %% Dataset
 F --> G["Recipe Dataset | Local File or Azure Blob Storage"]
@@ -76,7 +76,7 @@ F --> G["Recipe Dataset | Local File or Azure Blob Storage"]
 subgraph Startup["Startup Data Load"]
 direction LR
 S1["App Service Starts"] --> S2["Load Dataset (Blob or Local)"]
-S2 --> S3["Populate InMemory Repository"]
+S2 --> S3["Seed PostgreSQL when empty"]
 end
 
 S3 --> F
@@ -139,8 +139,8 @@ Contains:
 
 Responsible for:
 
-- dataset loading
-- in memory repository
+- PostgreSQL persistence through EF Core
+- dataset loading and startup seeding
 - Azure OpenAI query interpretation
 - external service integration
 
@@ -197,7 +197,7 @@ Recipe retrieval and ranking remain deterministic.
 
 ## Data Loading
 
-Recipe data is loaded once during application startup and stored in memory for fast read access during search.
+Recipe data is loaded during startup only when the PostgreSQL `Recipes` table is empty. EF Core applies pending migrations before seeding, and searches read recipes from PostgreSQL.
 
 Supported data sources:
 
@@ -206,7 +206,7 @@ Supported data sources:
 
 The active source is selected through configuration.
 
-After startup, all searches use the in memory repository to keep retrieval deterministic and low latency.
+The local dataset remains ignored by Git because it is large. Provide it at the documented path for local seeding, or enable Blob Storage mode.
 
 ---
 
@@ -265,11 +265,12 @@ http://localhost:5064/swagger
 
 ## Configuration
 
-Required configuration depends on the selected data source and whether AI query interpretation is enabled.
+Required configuration includes a PostgreSQL connection string, the selected data source, and whether AI query interpretation is enabled.
 
 Example user secrets:
 
 ```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<postgresql-connection-string>"
 dotnet user-secrets set "AzureOpenAI:Endpoint" "<endpoint>"
 dotnet user-secrets set "AzureOpenAI:ApiKey" "<api-key>"
 dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
@@ -323,17 +324,13 @@ Expected normalized input:
 
 ## Current Limitations
 
-* dataset is loaded in memory
 * full dataset scan per request
-* no persistent database
 * no semantic search
 * ranking is fully rule based
 
 ## Next Steps
 
-* move dataset to PostgreSQL
 * add embeddings for recipes
 * implement semantic search with pgvector
 * reduce full dataset iteration before ranking
 * combine semantic retrieval with rule based filtering
-
