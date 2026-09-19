@@ -29,11 +29,11 @@ public class RecipeDbContext(DbContextOptions<RecipeDbContext> options) : DbCont
                     ingredients => JsonSerializer.Deserialize<List<string>>(ingredients, (JsonSerializerOptions?)null)
                         ?? new List<string>())
                 .Metadata.SetValueComparer(ingredientsComparer);
-            entity.Property(recipe => recipe.Url).IsRequired();
-            entity.Property(recipe => recipe.CookTime).IsRequired();
-            entity.Property(recipe => recipe.PrepTime).IsRequired();
-            entity.Property(recipe => recipe.Source).IsRequired();
-            entity.Property(recipe => recipe.RecipeYield).IsRequired();
+            entity.Property(recipe => recipe.Url).IsRequired(false);
+            entity.Property(recipe => recipe.CookTime).IsRequired(false);
+            entity.Property(recipe => recipe.PrepTime).IsRequired(false);
+            entity.Property(recipe => recipe.Source).IsRequired(false);
+            entity.Property(recipe => recipe.RecipeYield).IsRequired(false);
         });
     }
 }

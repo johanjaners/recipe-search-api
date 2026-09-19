@@ -6,9 +6,9 @@ public class Recipe
     public string Name { get; init; } = string.Empty;
     public string IngredientsRaw { get; init; } = string.Empty;
     public IReadOnlyList<string> Ingredients { get; init; } = Array.Empty<string>();
-    public string Url { get; init; } = string.Empty;
-    public string CookTime { get; init; } = string.Empty;
-    public string PrepTime { get; init; } = string.Empty;
-    public string Source { get; init; } = string.Empty;
-    public string RecipeYield { get; init; } = string.Empty;
+    public string? Url { get; init; }
+    public string? CookTime { get; init; }
+    public string? PrepTime { get; init; }
+    public string? Source { get; init; }
+    public string? RecipeYield { get; init; }
 }
