@@ -20,7 +20,7 @@ Deployed on Azure App Service.
 Cloud resources used:
 
 - Azure App Service
-- Azure Blob Storage
+- PostgreSQL
 - Azure OpenAI
 
 ---
@@ -67,19 +67,15 @@ C -->|Query Interpretation| D["Infrastructure | Azure OpenAI Service | Translati
 C --> E["Domain Layer | Recipe, RecipeSearchQuery, InterpretedQuery, RankedRecipeResult"]
 
 %% Infrastructure
-E --> F["Infrastructure | PostgreSQL Repository, EF Core, Json Loader, Blob Loader"]
+E --> F["Infrastructure | PostgreSQL Repository, EF Core"]
 
-%% Dataset
-F --> G["Recipe Dataset | Local File or Azure Blob Storage"]
-
-%% Startup Flow
-subgraph Startup["Startup Data Load"]
+%% Database Startup
+subgraph Startup["Database Startup"]
 direction LR
-S1["App Service Starts"] --> S2["Load Dataset (Blob or Local)"]
-S2 --> S3["Seed PostgreSQL when empty"]
+S1["App Service Starts"] --> S2["Apply EF Core migrations"]
 end
 
-S3 --> F
+S2 --> F
 
 %% Search Flow
 subgraph Search_Flow["Search Flow"]
@@ -140,7 +136,6 @@ Contains:
 Responsible for:
 
 - PostgreSQL persistence through EF Core
-- dataset loading and startup seeding
 - Azure OpenAI query interpretation
 - external service integration
 
@@ -195,18 +190,11 @@ Recipe retrieval and ranking remain deterministic.
 
 ---
 
-## Data Loading
+## Data Storage
 
-Recipe data is loaded during startup only when the PostgreSQL `Recipes` table is empty. EF Core applies pending migrations before seeding, and searches read recipes from PostgreSQL.
+Recipes are stored in PostgreSQL and searches read them through the EF Core repository. EF Core applies pending migrations automatically during startup.
 
-Supported data sources:
-
-- local dataset file for local development
-- Azure Blob Storage for deployed environments
-
-The active source is selected through configuration.
-
-The local dataset remains ignored by Git because it is large. Provide it at the documented path for local seeding, or enable Blob Storage mode.
+PostgreSQL is the sole recipe data provider. Populate the `Recipes` table separately before starting the API.
 
 ---
 
@@ -216,14 +204,12 @@ Unit tests cover the core backend behavior.
 
 Covered components:
 
-- `JsonRecipeLoader`
+- `RecipeDbContext`
 - `RecipeSearchService`
 - `RecipeRankingService`
 
 Tests verify:
 
-- dataset parsing
-- field mapping
 - search orchestration
 - dependency interaction
 - ranking order
@@ -235,25 +221,13 @@ Tests verify:
 
 ## How to Run
 
-### Local dataset mode
-
-Place the dataset file in:
-
-```text
-data/20170107-061401-recipeitems.json
-```
-
-Then run:
+Run:
 
 ```bash
 dotnet restore
 dotnet build
 dotnet run --project src/RecipeSearch.Api
 ```
-
-### Blob Storage mode
-
-Configure Blob Storage and run the API without a local dataset file.
 
 Swagger:
 
@@ -265,7 +239,7 @@ http://localhost:5064/swagger
 
 ## Configuration
 
-Required configuration includes a PostgreSQL connection string, the selected data source, and whether AI query interpretation is enabled.
+Required configuration includes a PostgreSQL connection string and Azure OpenAI settings.
 
 Example user secrets:
 
@@ -274,7 +248,6 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<postgresql-conne
 dotnet user-secrets set "AzureOpenAI:Endpoint" "<endpoint>"
 dotnet user-secrets set "AzureOpenAI:ApiKey" "<api-key>"
 dotnet user-secrets set "AzureOpenAI:DeploymentName" "<deployment-name>"
-dotnet user-secrets set "BlobStorage:ConnectionString" "<connection-string>"
 ```
 
 ---

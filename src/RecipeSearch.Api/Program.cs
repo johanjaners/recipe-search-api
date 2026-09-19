@@ -4,7 +4,6 @@ using RecipeSearch.Api;
 using RecipeSearch.Api.Data;
 using RecipeSearch.Api.Extensions;
 using RecipeSearch.Application.Interfaces;
-using RecipeSearch.Infrastructure.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -46,13 +45,6 @@ await using (var scope = app.Services.CreateAsyncScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<RecipeDbContext>();
     await dbContext.Database.MigrateAsync();
-
-    if (!await dbContext.Recipes.AnyAsync())
-    {
-        var recipes = await RecipeDataLoader.LoadAsync(builder.Configuration, builder.Environment);
-        await dbContext.Recipes.AddRangeAsync(recipes);
-        await dbContext.SaveChangesAsync();
-    }
 }
 
 app.UseSwagger();
