@@ -9,8 +9,9 @@ public class EfRecipeRepository(RecipeDbContext dbContext) : IRecipeRepository
     public async Task<IReadOnlyList<Recipe>> GetAllAsync(
         CancellationToken cancellationToken = default)
     {
-        return await dbContext.Recipes
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+return await dbContext.Recipes
+    .AsNoTracking()
+    .OrderBy(recipe => recipe.Id)
+    .ToListAsync(cancellationToken);
     }
 }
