@@ -204,7 +204,6 @@ Unit tests cover the core backend behavior.
 
 Covered components:
 
-- `RecipeDbContext`
 - `RecipeSearchService`
 - `RecipeRankingService`
 
