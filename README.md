@@ -190,14 +190,6 @@ Recipe retrieval and ranking remain deterministic.
 
 ---
 
-## Data Storage
-
-Recipes are stored in PostgreSQL and searches read them through the EF Core repository. EF Core applies pending migrations automatically during startup.
-
-PostgreSQL is the sole recipe data provider. Populate the `Recipes` table separately before starting the API.
-
----
-
 ## Unit Tests
 
 Unit tests cover the core backend behavior.
